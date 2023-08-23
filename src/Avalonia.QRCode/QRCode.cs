@@ -252,15 +252,12 @@ namespace Avalonia.QRCode
 
         private void Draw(SKCanvas canvas, SKRect rect)
         {
-            if(QrImage is null)
-            {
-                return;
-            }
-            using var data = QrImage.Encode(SKEncodedImageFormat.Png, 100);
-            using var stream = File.OpenWrite(@"hoge.png");
-            data.SaveTo(stream);
             lock (_sync)
             {
+                if (QrImage is null)
+                {
+                    return;
+                }
                 canvas.Save();
                 canvas.DrawImage(QrImage, rect, default);
                 canvas.Restore();
