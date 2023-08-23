@@ -1,16 +1,21 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+      <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="Converters\" />
-    <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="Assets\QRIcon.ico" />
+    <AvaloniaXaml Remove="Converters\**" />
+    <AvaloniaXaml Remove="Models\**" />
+    <Compile Remove="Converters\**" />
+    <Compile Remove="Models\**" />
+    <EmbeddedResource Remove="Converters\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <None Remove="Converters\**" />
+    <None Remove="Models\**" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.0.0" />
@@ -21,5 +26,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Avalonia.QRCode\Avalonia.QRCode.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Assets\bit.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

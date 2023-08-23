@@ -1,47 +1,69 @@
 ﻿using Avalonia.Controls;
-using Avalonia.Data;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
-using QRCoder;
+using Avalonia.Metadata;
+using SkiaSharp;
+using SkiaSharp.QrCode;
+using System;
+using System.IO;
 
 namespace Avalonia.QRCode
 {
     public class QRCode : Control
     {
-
-        public static readonly StyledProperty<int> PixelsPerModuleProperty = AvaloniaProperty.Register<QRCode, int>(nameof(PixelsPerModule), 20);
-
-        public static readonly StyledProperty<IBrush> ColorProperty = AvaloniaProperty.Register<QRCode, IBrush>(nameof(Color), Brushes.Black);
-
-        public static readonly StyledProperty<IBrush> SpaceBrushProperty = AvaloniaProperty.Register<QRCode, IBrush>(nameof(SpaceBrush), Brushes.White);
-
-        public static readonly StyledProperty<bool> DrawQuietZonesProperty = AvaloniaProperty.Register<QRCode, bool>(nameof(DrawQuietZones), true);
-
-        public static readonly StyledProperty<string> DataProperty = AvaloniaProperty.Register<QRCode, string>(nameof(Data), string.Empty);
-
-
-
-        public static readonly StyledProperty<Bitmap> IconProperty = AvaloniaProperty.Register<QRCode, Bitmap>(nameof(Icon));
-
-        public static readonly StyledProperty<int> IconScaleProperty = AvaloniaProperty.Register<QRCode, int>(nameof(IconScale), 15);
-
-        public static readonly StyledProperty<int> IconBorderWidthProperty = AvaloniaProperty.Register<QRCode, int>(nameof(IconBorderWidth), 6);
-
-
-        /// <summary>
-        /// Width of the border which is drawn around the icon. Minimum: 1
-        /// </summary>
-        public int IconBorderWidth
+        public static readonly StyledProperty<Color> ColorProperty = AvaloniaProperty.Register<QRCode, Color>(nameof(Color), Brushes.Black.Color, coerce: (sender, e) =>
         {
-            get { return GetValue(IconBorderWidthProperty); }
-            set
+            if (sender is not QRCode control)
             {
-                if (value < 1)
-                    value = 1;
-
-                SetValue(IconBorderWidthProperty, value);
+                return e;
             }
-        }
+
+            control.UpdataQrImage(control.Data,e, control.SpaceColor, control.Icon, control.IconScale);
+            return e;
+        });
+
+        public static readonly StyledProperty<Color> SpaceColorProperty = AvaloniaProperty.Register<QRCode, Color>(nameof(SpaceColor), Brushes.White.Color, coerce: (sender, e) =>
+        {
+            if (sender is not QRCode control)
+            {
+                return e;
+            }
+
+            control.UpdataQrImage(control.Data, control.Color, e, control.Icon, control.IconScale);
+            return e;
+        });
+
+        public static readonly StyledProperty<string> DataProperty = AvaloniaProperty.Register<QRCode, string>(nameof(Data), string.Empty, coerce: (sender, e) =>
+        {
+            if (sender is not QRCode control)
+            {
+                return e;
+            }
+
+            control.UpdataQrImage(e, control.Color, control.SpaceColor, control.Icon, control.IconScale);
+            return e;
+        });
+
+        public static readonly StyledProperty<SKImage> IconProperty = AvaloniaProperty.Register<QRCode, SKImage>(nameof(Icon), coerce: (sender, e) =>
+        {
+            if (sender is not QRCode control)
+            {
+                return e;
+            }
+
+            control.UpdataQrImage(control.Data, control.Color, control.SpaceColor, e, control.IconScale);
+            return e;
+        });
+
+        public static readonly StyledProperty<int> IconScaleProperty = AvaloniaProperty.Register<QRCode, int>(nameof(IconScale), 15, coerce: (sender, e) =>
+        {
+            if (sender is not QRCode control)
+            {
+                return e;
+            }
+
+            control.UpdataQrImage(control.Data, control.Color, control.SpaceColor, control.Icon, e);
+            return e;
+        });
 
         /// <summary>
         /// Value from 1-99. Sets how much % of the QR Code will be covered by the icon
@@ -63,7 +85,7 @@ namespace Avalonia.QRCode
         /// <summary>
         /// If null, then ignored. If set, the Bitmap is drawn in the middle of the QR Code
         /// </summary>
-        public Bitmap Icon
+        public SKImage Icon
         {
             get { return GetValue(IconProperty); }
             set 
@@ -72,7 +94,7 @@ namespace Avalonia.QRCode
             }
         }
 
-
+        [Content]
         public string Data
         {
             get { return GetValue(DataProperty); }
@@ -83,33 +105,21 @@ namespace Avalonia.QRCode
         }
 
         /// <summary>
-        /// If true a white border is drawn around the whole QR Code
-        /// </summary>
-        public bool DrawQuietZones
-        {
-            get { return GetValue(DrawQuietZonesProperty); }
-            set 
-            { 
-                SetValue(DrawQuietZonesProperty, value);
-            }
-        }
-
-        /// <summary>
         /// The color of the light/white modules
         /// </summary>
-        public IBrush SpaceBrush
+        public Color SpaceColor
         {
-            get { return GetValue(SpaceBrushProperty); }
+            get { return GetValue(SpaceColorProperty); }
             set 
             {
-                SetValue(SpaceBrushProperty, value);
+                SetValue(SpaceColorProperty, value);
             }
         }
 
         /// <summary>
         /// The color of the dark/black modules
         /// </summary>
-        public IBrush Color
+        public Color Color
         {
             get { return GetValue(ColorProperty); }
             set 
@@ -118,59 +128,143 @@ namespace Avalonia.QRCode
             }
         }
 
-        /// <summary>
-        /// The pixel size each b/w module is drawn
-        /// </summary>
-        public int PixelsPerModule
+        public static readonly AvaloniaProperty<Stretch> StretchProperty =
+            AvaloniaProperty.Register<QRCode, Stretch>(
+                nameof(Stretch), Stretch.Uniform);
+
+        public static readonly AvaloniaProperty<StretchDirection> StretchDirectionProperty =
+            AvaloniaProperty.Register<QRCode, StretchDirection>(
+                nameof(StretchDirection), StretchDirection.Both);
+
+        public Stretch Stretch
         {
-            get { return GetValue(PixelsPerModuleProperty); }
-            set 
-            { 
-                SetValue(PixelsPerModuleProperty, value);
-            }
+            get => (Stretch)this.GetValue(StretchProperty)!;
+            set => this.SetValue(StretchProperty, value);
+        }
+
+        public StretchDirection StretchDirection
+        {
+            get => (StretchDirection)this.GetValue(StretchDirectionProperty)!;
+            set => this.SetValue(StretchDirectionProperty, value);
         }
 
         public QRCode()
         {
-            AffectsRender<QRCode>(DataProperty, PixelsPerModuleProperty, DrawQuietZonesProperty, ColorProperty, SpaceBrushProperty, IconProperty, IconScaleProperty, IconBorderWidthProperty);
-
+            AffectsRender<QRCode>(DataProperty, ColorProperty, SpaceColorProperty, IconProperty, IconScaleProperty,  StretchProperty, StretchDirectionProperty);
+            AffectsMeasure<QRCode>(DataProperty, StretchProperty, StretchDirectionProperty);
+            AffectsArrange<QRCode>(DataProperty, StretchProperty, StretchDirectionProperty);
         }
 
+        private Size RenderSize => this.Bounds.Size;
 
-        public override void Render(DrawingContext context)
+        private Size SourceSize { set; get; } =new Size(512, 512);
+
+        protected override Size MeasureOverride(Size constraint)
         {
-            QRCodeData qrCodeData = qrGenerator.CreateQrCode(Data, QRCodeGenerator.ECCLevel.Q);
-            QRCoder.QRCode qrCode = new QRCoder.QRCode(qrCodeData);
-            System.Drawing.Bitmap systemBitmap = null;
-
-            if (Icon == null)
-                systemBitmap = qrCode.GetGraphic(PixelsPerModule, Color.ToHex(), SpaceBrush.ToHex(), DrawQuietZones);
-            else
-                systemBitmap = qrCode.GetGraphic(PixelsPerModule, Color.FromNative(), SpaceBrush.FromNative(), Icon.FromNative(), IconScale, IconBorderWidth, DrawQuietZones);
-
-            var source = systemBitmap.ToNative();
-
-
-            if (source != null && Bounds.Width > 0 && Bounds.Height > 0)
+            if (!string.IsNullOrWhiteSpace(Data))
             {
-                Rect viewPort = new Rect(Bounds.Size);
-                Size sourceSize = source.Size;
-
-                Vector scale = Stretch.Uniform.CalculateScaling(Bounds.Size, sourceSize, StretchDirection.Both);
-                Size scaledSize = sourceSize * scale;
-                Rect destRect = viewPort
-                    .CenterRect(new Rect(scaledSize))
-                    .Intersect(viewPort);
-                Rect sourceRect = new Rect(sourceSize)
-                    .CenterRect(new Rect(destRect.Size / scale));
-
-                context.DrawImage(source, sourceRect, destRect);
+                return Stretch.CalculateSize(constraint, SourceSize, StretchDirection);
+            }
+            else
+            {
+                return default;
             }
         }
 
+        protected override Size ArrangeOverride(Size arrangeSize)
+        {
+            if (!string.IsNullOrWhiteSpace(Data))
+            {
+                return Stretch.CalculateSize(arrangeSize, SourceSize);
+            }
+            else
+            {
+                return default;
+            }
+        }
 
-        Image image;
-        QRCodeGenerator qrGenerator = new QRCodeGenerator();
+        private SKImage? QrImage;
 
+        private QRCodeGenerator qrGenerator = new QRCodeGenerator();
+        private readonly object _sync = new();
+
+        /// <summary>
+        /// 更新二维码图片
+        /// </summary>
+        private void UpdataQrImage(string data,Color color,Color spaceColor, SKImage icon,int iconScale)
+        {
+            lock (_sync)
+            {
+                if (string.IsNullOrWhiteSpace(data))
+                {
+                    QrImage = null;
+                    return;
+                }
+                QRCodeData qrCodeData = qrGenerator.CreateQrCode(plainText:Data, eccLevel: ECCLevel.L, quietZoneSize:0);
+
+                var info = new SKImageInfo(Convert.ToInt32( SourceSize.Width),Convert.ToInt32(SourceSize.Height));
+                using var surface = SKSurface.Create(info);
+                var canvas = surface.Canvas;
+
+                qrCodeData.Render(canvas, new SKRect(0, 0, info.Width, info.Height)
+                    , new SKColor(color.R, color.G, color.B, color.A)
+                    , new SKColor(spaceColor.R, spaceColor.G, spaceColor.B, spaceColor.A)
+                    , icon, iconScale);
+                QrImage = surface.Snapshot();
+            }
+        }
+
+        public override void Render(DrawingContext drawingContext)
+        {
+            if(!string.IsNullOrEmpty(Data))
+            {
+                Size sourceSize = SourceSize;
+
+                var viewPort = new Rect(RenderSize);
+                var scale = Stretch.CalculateScaling(RenderSize, sourceSize, StretchDirection);
+                var scaledSize = sourceSize * scale;
+                var destRect = viewPort
+                    .CenterRect(new Rect(scaledSize))
+                    .Intersect(viewPort);
+                var sourceRect = new Rect(sourceSize)
+                    .CenterRect(new Rect(destRect.Size / scale));
+
+                //var bounds = SKRect.Create(new SKPoint(), new SKSize { Height = (float)SKRect.Create(new SKPoint(), new SKSize { Height = (float)sourceSize.Height, Width = (float)sourceSize.Width }).Height, Width = (float)sourceSize.Width });
+                var bounds = SKRect.Create(0f, 0f, (float)sourceSize.Width, (float)sourceSize.Height);
+                var scaleMatrix = Matrix.CreateScale(
+                    destRect.Width / sourceRect.Width,
+                    destRect.Height / sourceRect.Height);
+                var translateMatrix = Matrix.CreateTranslation(
+                    -sourceRect.X + destRect.X - bounds.Top,
+                    -sourceRect.Y + destRect.Y - bounds.Left);
+
+                using (drawingContext.PushClip(destRect))
+                using (drawingContext.PushTransform(translateMatrix * scaleMatrix))
+                {
+                    drawingContext.Custom(new FuncCustomDrawOperation(bounds, Draw));
+                }
+            }
+            else
+            {
+                base.Render(drawingContext);
+            }
+        }
+
+        private void Draw(SKCanvas canvas, SKRect rect)
+        {
+            if(QrImage is null)
+            {
+                return;
+            }
+            using var data = QrImage.Encode(SKEncodedImageFormat.Png, 100);
+            using var stream = File.OpenWrite(@"hoge.png");
+            data.SaveTo(stream);
+            lock (_sync)
+            {
+                canvas.Save();
+                canvas.DrawImage(QrImage, rect, default);
+                canvas.Restore();
+            }
+        }
     }
 }
