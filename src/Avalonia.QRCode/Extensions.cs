@@ -1,81 +1,106 @@
 ﻿using Avalonia.Media;
-using Avalonia.Media.Imaging;
-using System.Drawing;
+using Avalonia.Platform;
+using Avalonia.Rendering.SceneGraph;
+using Avalonia.Skia;
+using SkiaSharp;
+using SkiaSharp.QrCode;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.Drawing.Imaging;
+using System.Linq;
 
 namespace Avalonia.QRCode
 {
     public static class Extensions
     {
-
-        public static string ToHex(this IBrush brush)
-        {            
-            var scb = brush as ISolidColorBrush;            
-            var c = scb.Color;
-            return "#" + c.A.ToString("X2")+ c.R.ToString("X2") + c.G.ToString("X2") + c.B.ToString("X2");      
-        }
-
-        public static string ToHex(this Media.Color c)
-        {
-            return "#" + c.A.ToString("X2") + c.R.ToString("X2") + c.G.ToString("X2") + c.B.ToString("X2");
-        }
-
-
-
-
-        public static System.Drawing.Color FromNative(this IBrush brush)
-        {
-            var scb = brush as ISolidColorBrush;
-            return scb.Color.FromNative();
-        }
-
-        public static System.Drawing.Color FromNative(this Avalonia.Media.Color color)
-        {
-            return System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B);
-        }
-
-        public static Avalonia.Media.Color ToNative(this System.Drawing.Color color)
-        {
-            return Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B);
-        }
-
-
         /// <summary>
-        /// Converts a System.Drawing.Bitmap to Avalonia.Media.Imaging.Bitmap
+        /// Render the specified data into the given area of the target canvas.
         /// </summary>
-        /// <param name="bitmap"></param>
-        /// <returns></returns>
-        public static Avalonia.Media.Imaging.Bitmap ToNative(this System.Drawing.Bitmap bitmap)
+        /// <param name="canvas">The canvas.</param>
+        /// <param name="area">The area.</param>
+        /// <param name="data">The data.</param>
+        /// <param name="qrColor">The color.</param>
+        /// <param name="icon">The icon </param>
+        /// <param name="iconScale">The icon scale</param>
+        public static void Render(this QRCodeData data, SKCanvas canvas, SKRect area,SKColor? qrColor, SKColor? backgroundColor, SKImage? icon = null,int iconScale =10)
         {
-            using (MemoryStream memory = new MemoryStream())
+            if (data != null)
             {
-                bitmap.Save(memory, ImageFormat.Png);
-                memory.Position = 0;
+                using (var lightPaint = new SKPaint() { Color = (backgroundColor.HasValue ? backgroundColor.Value : SKColors.White), Style = SKPaintStyle.StrokeAndFill })
+                using (var darkPaint = new SKPaint() { Color = (qrColor.HasValue ? qrColor.Value : SKColors.Black), Style = SKPaintStyle.StrokeAndFill })
+                {
 
-                return new Avalonia.Media.Imaging.Bitmap(memory);
+                    var rows = data.ModuleMatrix.Count;
+                    var columns = data.ModuleMatrix.Select(x => x.Length).Max();
+                    var cellHeight = area.Height / rows;
+                    var cellWidth = area.Width / columns;
+
+                    for (int y = 0; y < rows; y++)
+                    {
+                        var row = data.ModuleMatrix.ElementAt(y);
+                        for (int x = 0; x < row.Length; x++)
+                            canvas.DrawRect(SKRect.Create(area.Left + x * cellWidth, area.Top + y * cellHeight, cellWidth, cellHeight), (row[x] ? darkPaint : lightPaint));
+                    }
+
+                    if (icon != null
+                        && iconScale > 0
+                        && iconScale < 100)
+                    {
+                        var iconWidth = (area.Width / 100) * iconScale;
+                        var iconHeight = (area.Height / 100) * iconScale;
+
+                        var x = (area.Width / 2) - (iconWidth / 2);
+                        var y = (area.Height / 2) - (iconHeight / 2);
+
+                        //canvas.DrawBitmap(icon, SKRect.Create(x, y, iconWidth, iconHeight));
+                        canvas.DrawImage(icon, SKRect.Create(x, y, iconWidth, iconHeight));
+                    }
+                }
             }
         }
+    }
 
-        /// <summary>
-        /// Converts a Avalonia.Media.Imaging.Bitmap to System.Drawing.Bitmap
-        /// </summary>
-        /// <param name="bitmap"></param>
-        /// <returns></returns>
-        public static System.Drawing.Bitmap FromNative(this Avalonia.Media.Imaging.Bitmap bitmap)
+    internal class FuncCustomDrawOperation : ICustomDrawOperation
+    {
+        private readonly Action<SKCanvas, SKRect> _draw;
+
+        public FuncCustomDrawOperation(SKRect skRect, Action<SKCanvas, SKRect> draw)
         {
-            using (MemoryStream memory = new MemoryStream())
-            {
-                bitmap.Save(memory);
-                memory.Position = 0;
-                return new System.Drawing.Bitmap(memory);
-            }
+            _draw = draw;
+            Bounds = new Rect(skRect.Left, skRect.Top, skRect.Width, skRect.Height);
+            SKRect = skRect;
         }
 
+        public void Dispose()
+        {
+        }
 
+        public Rect Bounds { get; }
 
+        public SKRect SKRect { get; }
+
+        public bool HitTest(Point p) => Bounds.Contains(p);
+
+        public bool Equals(ICustomDrawOperation? other)
+        {
+            return object.ReferenceEquals(this, other);
+        }
+
+        public void Render(ImmediateDrawingContext context)
+        {
+            var leaseFeature = context.TryGetFeature<ISkiaSharpApiLeaseFeature>();
+            RenderLeaseFeature(leaseFeature);
+        }
+
+        private void RenderLeaseFeature(ISkiaSharpApiLeaseFeature? leaseFeature)
+        {
+            if (leaseFeature is { })
+            {
+                using var lease = leaseFeature.Lease();
+                var canvas = lease?.SkCanvas;
+                if (canvas is not null)
+                {
+                    _draw(canvas, SKRect);
+                }
+            }
+        }
     }
 }

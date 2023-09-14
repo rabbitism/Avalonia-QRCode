@@ -1,11 +1,5 @@
-using Avalonia;
-using Avalonia.Media.Imaging;
-using Avalonia.Platform;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using Avalonia.Markup.Xaml.Converters;
 using Avalonia.Media;
+using SkiaSharp;
 
 namespace Sample.ViewModels
 {
@@ -18,7 +12,7 @@ namespace Sample.ViewModels
             {
                 this.RaiseAndSetIfChanged(ref hasIcon, value);
                 if (value)
-                    IconSource = new Bitmap(AssetLoader.Open(new Uri("avares://Sample/Assets/bit.png")));
+                    IconSource = SKImage.FromEncodedData("Assets/bit.png");// Bitmap(AssetLoader.Open(new Uri("avares://Sample/Assets/bit.png")));
                 else
                     IconSource = null;
             }
@@ -28,18 +22,6 @@ namespace Sample.ViewModels
         {
             get => data;
             set => this.RaiseAndSetIfChanged(ref data, value);
-        }
-
-        public int PixelsPerModule
-        {
-            get => pixelsPerModule;
-            set => this.RaiseAndSetIfChanged(ref pixelsPerModule, value);
-        }
-
-        public bool QuitZones
-        {
-            get => quitZones;
-            set => this.RaiseAndSetIfChanged(ref quitZones, value);
         }
 
         public Color Color
@@ -54,7 +36,7 @@ namespace Sample.ViewModels
             set => this.RaiseAndSetIfChanged(ref spaceColor, value);
         }
 
-        public Bitmap IconSource
+        public SKImage? IconSource
         {
             get => iconSource;
             set => this.RaiseAndSetIfChanged(ref iconSource, value);
@@ -66,34 +48,20 @@ namespace Sample.ViewModels
             set => this.RaiseAndSetIfChanged(ref iconScale, value);
         }
 
-        public int IconBorder
-        {
-            get => iconBorder;
-            set => this.RaiseAndSetIfChanged(ref iconBorder, value);
-        }
-
         public MainWindowViewModel()
         {
             this.Data = "https://github.com/MikeCodesDotNET/Avalonia-QRCode";
-            this.PixelsPerModule = 20;
             IconScale = 15;
-            IconBorder = 6;
             HasIcon = false;
         }
 
 
         private string data;
-        private int pixelsPerModule;
-        private bool quitZones;
 
         private bool hasIcon;
-        private Bitmap iconSource;
+        private SKImage? iconSource;
         private int iconScale;
-        private int iconBorder;
         private Color color = Colors.Black;
         private Color spaceColor = Colors.White;
-
-
-
     }
 }
