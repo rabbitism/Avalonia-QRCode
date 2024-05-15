@@ -24,35 +24,35 @@ namespace Avalonia.QRCode
         {
             if (data != null)
             {
-                using (var lightPaint = new SKPaint() { Color = (backgroundColor.HasValue ? backgroundColor.Value : SKColors.White), Style = SKPaintStyle.StrokeAndFill })
-                using (var darkPaint = new SKPaint() { Color = (qrColor.HasValue ? qrColor.Value : SKColors.Black), Style = SKPaintStyle.StrokeAndFill })
+                using var lightPaint = new SKPaint() { Color = backgroundColor ?? SKColors.White, Style = SKPaintStyle.StrokeAndFill };
+                using var darkPaint = new SKPaint() { Color = qrColor ?? SKColors.Black, Style = SKPaintStyle.StrokeAndFill };
+
+                var rows = data.ModuleMatrix.Count;
+                var columns = data.ModuleMatrix.Select(x => x.Length).Max();
+                var cellHeight = area.Height / rows;
+                var cellWidth = area.Width / columns;
+
+                for (int y = 0; y < rows; y++)
                 {
-
-                    var rows = data.ModuleMatrix.Count;
-                    var columns = data.ModuleMatrix.Select(x => x.Length).Max();
-                    var cellHeight = area.Height / rows;
-                    var cellWidth = area.Width / columns;
-
-                    for (int y = 0; y < rows; y++)
+                    var row = data.ModuleMatrix.ElementAt(y);
+                    for (int x = 0; x < row.Length; x++)
                     {
-                        var row = data.ModuleMatrix.ElementAt(y);
-                        for (int x = 0; x < row.Length; x++)
-                            canvas.DrawRect(SKRect.Create(area.Left + x * cellWidth, area.Top + y * cellHeight, cellWidth, cellHeight), (row[x] ? darkPaint : lightPaint));
+                        canvas.DrawRect(SKRect.Create(area.Left + x * cellWidth, area.Top + y * cellHeight, cellWidth, cellHeight), row[x] ? darkPaint : lightPaint);
                     }
+                }
 
-                    if (icon != null
-                        && iconScale > 0
-                        && iconScale < 100)
-                    {
-                        var iconWidth = (area.Width / 100) * iconScale;
-                        var iconHeight = (area.Height / 100) * iconScale;
+                if (icon != null
+                    && iconScale > 0
+                    && iconScale < 100)
+                {
+                    var iconWidth = (area.Width / 100) * iconScale;
+                    var iconHeight = (area.Height / 100) * iconScale;
 
-                        var x = (area.Width / 2) - (iconWidth / 2);
-                        var y = (area.Height / 2) - (iconHeight / 2);
+                    var x = (area.Width / 2) - (iconWidth / 2);
+                    var y = (area.Height / 2) - (iconHeight / 2);
 
-                        //canvas.DrawBitmap(icon, SKRect.Create(x, y, iconWidth, iconHeight));
-                        canvas.DrawImage(icon, SKRect.Create(x, y, iconWidth, iconHeight));
-                    }
+                    //canvas.DrawBitmap(icon, SKRect.Create(x, y, iconWidth, iconHeight));
+                    canvas.DrawImage(icon, SKRect.Create(x, y, iconWidth, iconHeight));
                 }
             }
         }

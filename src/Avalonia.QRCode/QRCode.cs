@@ -4,7 +4,6 @@ using Avalonia.Metadata;
 using SkiaSharp;
 using SkiaSharp.QrCode;
 using System;
-using System.IO;
 
 namespace Avalonia.QRCode
 {
@@ -185,7 +184,7 @@ namespace Avalonia.QRCode
 
         private SKImage? QrImage;
 
-        private QRCodeGenerator qrGenerator = new QRCodeGenerator();
+        private readonly QRCodeGenerator qrGenerator = new ();
         private readonly object _sync = new();
 
         /// <summary>
