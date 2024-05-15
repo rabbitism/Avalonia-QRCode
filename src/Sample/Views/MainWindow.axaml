@@ -35,101 +35,137 @@
             Data="{Binding Data}"
             Icon="{Binding IconSource}"
             IconScale="{Binding IconScale}"
+            Level="{Binding Level}"
+            QrImage="{Binding QrImage}"
+            QuietZoneSize="{Binding QuietZoneSize}"
             SpaceColor="{Binding SpaceColor, Converter={StaticResource BrushConverter}}"
             Color="{Binding Color, Converter={StaticResource BrushConverter}}" />
 
-
-        <StackPanel
+        <Grid
             Grid.Column="1"
             Width="350"
             Background="Black"
-            Spacing="10">
+            ColumnDefinitions="Auto,*"
+            RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto, *">
+            <TextBlock
+                Grid.Row="0"
+                Grid.Column="0"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Foreground="White"
+                Text="Data" />
+            <TextBox
+                Grid.Row="0"
+                Grid.Column="1"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Text="{Binding Data}"
+                Watermark="Data" />
 
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto, Auto">
-                <TextBlock
-                    Grid.Row="0"
-                    Grid.Column="0"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    Foreground="White"
-                    Text="Data" />
-                <TextBox
-                    Grid.Row="0"
-                    Grid.Column="1"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    Text="{Binding Data}"
-                    Watermark="Data" />
+            <TextBlock
+                Grid.Row="3"
+                Grid.Column="0"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Foreground="White"
+                Text="Color" />
+            <ColorPicker
+                Grid.Row="3"
+                Grid.Column="1"
+                Margin="{DynamicResource DefaultMargin}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Color="{Binding Color}" />
 
-                <TextBlock
-                    Grid.Row="3"
-                    Grid.Column="0"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    Foreground="White"
-                    Text="Color" />
-                <ColorPicker
-                    Grid.Row="3"
-                    Grid.Column="1"
-                    Margin="{DynamicResource DefaultMargin}"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    Color="{Binding Color}" />
+            <TextBlock
+                Grid.Row="4"
+                Grid.Column="0"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Foreground="White"
+                Text="Space Brush" />
+            <ColorPicker
+                Grid.Row="4"
+                Grid.Column="1"
+                Margin="{DynamicResource DefaultMargin}"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Color="{Binding SpaceColor}" />
 
-                <TextBlock
-                    Grid.Row="4"
-                    Grid.Column="0"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    Foreground="White"
-                    Text="Space Brush" />
-                <ColorPicker
-                    Grid.Row="4"
-                    Grid.Column="1"
-                    Margin="{DynamicResource DefaultMargin}"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Center"
-                    Color="{Binding SpaceColor}" />
+            <TextBlock
+                Grid.Row="5"
+                Grid.Column="0"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Foreground="White"
+                Text="Has Icon" />
+            <ToggleSwitch
+                Name="hasIcon"
+                Grid.Row="5"
+                Grid.Column="1"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                IsChecked="{Binding HasIcon}" />
 
+            <TextBlock
+                Grid.Row="6"
+                Grid.Column="0"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Foreground="White"
+                IsVisible="{Binding #hasIcon.IsChecked}"
+                Text="Icon Scale" />
+            <NumericUpDown
+                Grid.Row="6"
+                Grid.Column="1"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                IsVisible="{Binding #hasIcon.IsChecked}"
+                Maximum="99"
+                Minimum="1"
+                Value="{Binding IconScale}" />
 
+            <TextBlock
+                Grid.Row="7"
+                Grid.Column="0"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Foreground="White"
+                Text="Quiet Zone Size" />
 
-                <TextBlock
-                    Grid.Row="5"
-                    Grid.Column="0"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    Foreground="White"
-                    Text="Has Icon" />
-                <ToggleSwitch
-                    Name="hasIcon"
-                    Grid.Row="5"
-                    Grid.Column="1"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    IsChecked="{Binding HasIcon}" />
+            <NumericUpDown
+                Grid.Row="7"
+                Grid.Column="1"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Maximum="99"
+                Minimum="0"
+                Value="{Binding QuietZoneSize}" />
 
-                <TextBlock
-                    Grid.Row="6"
-                    Grid.Column="0"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    Foreground="White"
-                    IsVisible="{Binding #hasIcon.IsChecked}"
-                    Text="Icon Scale" />
-                <NumericUpDown
-                    Grid.Row="6"
-                    Grid.Column="1"
-                    Margin="{DynamicResource DefaultMargin}"
-                    VerticalAlignment="Center"
-                    IsVisible="{Binding #hasIcon.IsChecked}"
-                    Maximum="99"
-                    Minimum="1"
-                    Value="{Binding IconScale}" />
+            <TextBlock
+                Grid.Row="8"
+                Grid.Column="0"
+                Margin="{DynamicResource DefaultMargin}"
+                VerticalAlignment="Center"
+                Foreground="White"
+                Text="ECC Level" />
 
-            </Grid>
+            <ComboBox
+                Grid.Row="8"
+                Grid.Column="1"
+                Margin="{DynamicResource DefaultMargin}"
+                ItemsSource="{Binding Levels}"
+                SelectedItem="{Binding Level}" />
 
-        </StackPanel>
+            <Button
+                Grid.Row="9"
+                Grid.Column="1"
+                Width="60"
+                Margin="{DynamicResource DefaultMargin}"
+                HorizontalContentAlignment="Center"
+                Command="{Binding ExportCommand}"
+                Content="导出" />
 
-
+        </Grid>
     </Grid>
 </Window>
